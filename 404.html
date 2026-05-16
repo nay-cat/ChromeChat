@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <script>
+    const path = window.location.pathname;
+    const base = path.substring(0, path.lastIndexOf('/'));
+    window.location.replace(base + '/#' + window.location.pathname.slice(base.length + 1));
+  </script>
+</head>
+<body></body>
+</html>

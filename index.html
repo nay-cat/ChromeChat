@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChromeChat</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./highlight.min.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- Top bar -->
+    <header id="topbar">
+      <div class="topbar-left">
+        <div class="topbar-brand">
+          <img src="./icons/icon.svg" alt="" class="topbar-brand-icon" />
+          <span>ChromeChat</span>
+        </div>
+        <div id="model-status" class="model-status checking">
+          <span class="status-dot"></span>
+          <span class="status-text">Checking model...</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button id="history-btn" title="Recent chats">
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          History
+        </button>
+        <button id="new-chat-btn" title="New chat">
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          New chat
+        </button>
+        <button id="import-btn" title="Import .crchat">
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Import
+        </button>
+        <button id="export-btn" title="Export chat as .crchat" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Export
+        </button>
+        <button id="settings-btn" title="Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+      <input type="file" id="import-input" accept=".crchat" hidden />
+    </header>
+
+    <!-- Main content -->
+    <main id="main">
+      <div id="welcome-screen">
+        <div class="welcome-content">
+          <div class="welcome-icon">
+            <img src="./icons/icon.svg" alt="ChromeChat" />
+          </div>
+          <h1 id="welcome-title">ChromeChat</h1>
+          <p id="welcome-subtitle">Local AI with Gemini Nano | works offline</p>
+          <div class="welcome-chips">
+            <button class="chip" data-prompt="What can you do?">What can you do?</button>
+            <button class="chip" data-prompt="Write me a short poem">Write a poem</button>
+            <button class="chip" data-prompt="Summarize this text for me">Summarize text</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="messages-container" class="hidden">
+        <div id="messages"></div>
+      </div>
+
+      <div id="attachments-preview" class="hidden"></div>
+
+      <div id="input-area">
+        <div id="input-box">
+          <button id="attach-btn" title="Attach file or image">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+          <input type="file" id="file-input" accept="image/*,.pdf,.txt,.md,.js,.ts,.py,.html,.css,.json" multiple hidden />
+          <div id="dino-runner" class="dino-runner" aria-hidden="true">
+            <img class="dino" src="./icons/dinosaur.svg" alt="" />
+          </div>
+          <textarea id="message-input" placeholder="Message ChromeChat..." rows="1"></textarea>
+          <button id="send-btn" disabled title="Send">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          </button>
+        </div>
+        <div class="input-footer">
+          <p id="storage-disclaimer" class="input-disclaimer">Calculating storage...</p>
+          <p class="input-disclaimer footer-credit">
+            Made by <a href="https://github.com/nay-cat" target="_blank" rel="noopener noreferrer">nay-cat</a>
+            &middot;
+            <a href="https://github.com/nay-cat/ChromeChat/issues/new" target="_blank" rel="noopener noreferrer">Report a bug</a>
+          </p>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <img src="./icons/chromeChatLogo.svg" alt="" class="logo-img" aria-hidden="true" />
+
+  <!-- Settings panel -->
+  <div id="settings-panel" class="panel hidden">
+    <div class="panel-content">
+      <div class="panel-header">
+        <h2>Settings</h2>
+        <button id="settings-close" class="icon-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">AI name</label>
+        <input type="text" id="s-ai-name" class="settings-input" placeholder="ChromeChat" />
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Your name</label>
+        <input type="text" id="s-user-name" class="settings-input" placeholder="You" />
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">System prompt</label>
+        <textarea id="s-system-prompt" class="settings-textarea" rows="5" placeholder="You are a helpful assistant..."></textarea>
+        <p class="settings-hint">Defines the AI's personality. Restart the session after changing.</p>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Welcome message</label>
+        <input type="text" id="s-welcome-msg" class="settings-input" placeholder="Local AI with Gemini Nano..." />
+      </div>
+
+      <div class="settings-actions">
+        <button id="settings-save" class="btn-primary">Save</button>
+        <button id="settings-reset" class="btn-outline">Reset to defaults</button>
+      </div>
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-group">
+        <label class="settings-label">Storage</label>
+        <div id="storage-info" class="storage-info"></div>
+        <button id="clear-storage-btn" class="btn-danger">Clear all chats</button>
+      </div>
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-group">
+        <label class="settings-label">Device &amp; Model</label>
+        <div id="device-specs" class="specs-grid"></div>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Chrome internals</label>
+        <div class="chrome-links">
+          <button class="chrome-link-btn" id="open-internals">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            chrome://on-device-internals
+          </button>
+          <button class="chrome-link-btn" id="open-flags">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+            chrome://flags/#prompt-api-for-gemini-nano
+          </button>
+        </div>
+        <p class="settings-hint">These links only work if you copy them manually into the Chrome address bar. Browsers block direct navigation to chrome:// pages from web apps.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Setup modal -->
+  <div id="setup-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-icon" id="setup-icon">
+        <img src="./icons/downloadIcon.svg" alt="" width="64" height="64" />
+      </div>
+      <h2 id="setup-title">Setting up ChromeChat</h2>
+      <p id="setup-message">Checking Gemini Nano availability...</p>
+
+      <div id="setup-progress" class="hidden">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <span id="progress-text">0%</span>
+      </div>
+
+      <div id="setup-lang" class="hidden">
+        <p class="setup-section-label">Select languages</p>
+        <p class="setup-note" style="margin-bottom:10px;margin-top:0">Only English, Spanish and Japanese are currently supported by the model.</p>
+        <div class="lang-grid" id="lang-grid">
+          <label class="lang-check"><input type="checkbox" value="en" checked /> English</label>
+          <label class="lang-check"><input type="checkbox" value="es" /> Spanish</label>
+          <label class="lang-check"><input type="checkbox" value="ja" /> Japanese</label>
+        </div>
+
+        <div class="compat-box" id="compat-box">
+          <p class="compat-title">Hardware requirements</p>
+          <div class="compat-row" id="compat-gpu">
+            <span class="compat-dot"></span>
+            <span>GPU: checking...</span>
+          </div>
+          <div class="compat-row" id="compat-cpu">
+            <span class="compat-dot"></span>
+            <span>CPU: checking...</span>
+          </div>
+          <div class="compat-row">
+            <span class="compat-dot compat-ok"></span>
+            <span>Storage: 22 GB free required</span>
+          </div>
+          <div class="compat-row">
+            <span class="compat-dot compat-ok"></span>
+            <span>OS: Windows 10/11, macOS 13+, Linux</span>
+          </div>
+        </div>
+
+        <button id="setup-download-btn" class="btn-primary" style="margin-top:16px;width:100%">Download model (~4 GB)</button>
+        <p class="setup-note" style="margin-top:8px">Downloaded once. Works offline after that.</p>
+      </div>
+
+      <div id="setup-actions" class="hidden">
+        <button id="setup-download-btn-simple" class="btn-primary">Download model (~4 GB)</button>
+        <p class="setup-note">Downloaded once. Works offline after that.</p>
+      </div>
+
+      <div id="setup-error" class="hidden">
+        <p id="setup-error-msg"></p>
+        <div class="setup-error-actions">
+          <a href="https://developer.chrome.com/docs/ai/get-started" target="_blank" class="btn-secondary">View requirements</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="history-dropdown" class="history-dropdown hidden">
+    <div class="history-header">
+      <span>Recent chats</span>
+      <button id="history-close" class="icon-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="history-list"></div>
+  </div>
+
+  <script src="./js/lib/marked.umd.js"></script>
+  <script src="./js/lib/purify.min.js"></script>
+  <script src="./js/lib/highlight.min.js"></script>
+  <script>
+    marked.use({
+      renderer: (function () {
+        const r = new marked.Renderer();
+        r.code = function (token) {
+          const lang = token.lang || '';
+          const code = token.text || '';
+          const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+          const highlighted = hljs.highlight(code, { language: language }).value;
+          return '<div class="code-block">'
+            + '<div class="code-header">'
+            + '<span class="code-lang">' + (lang || 'code') + '</span>'
+            + '<button class="code-copy" onclick="navigator.clipboard.writeText(this.closest(\'.code-block\').querySelector(\'code\').innerText).then(function(){var b=this;b.textContent=\'Copied!\';setTimeout(function(){b.textContent=\'Copy\';},1800)}.bind(this))">Copy</button>'
+            + '</div>'
+            + '<pre><code class="hljs language-' + language + '">' + highlighted + '</code></pre>'
+            + '</div>';
+        };
+        return r;
+      })()
+    });
+  </script>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
