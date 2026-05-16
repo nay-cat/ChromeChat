@@ -6,7 +6,7 @@ Offline PWA chat powered by Chrome's built-in Gemini Nano. No server, no API key
 
 ## Requirements
 
-- Chrome 127+
+- Chrome 148+
 - Enable the flag: `chrome://flags/#prompt-api-for-gemini-nano` 
 - ~4GB free storage (for the Gemini Nano model download)
 - Compatible GPU and CPU (checked automatically on first launch)
