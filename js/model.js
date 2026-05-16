@@ -10,10 +10,11 @@ export async function initModel() {
 
     const api = self.LanguageModel || (self.ai && self.ai.languageModel) || null;
 
+    // https://stackoverflow.com/questions/4900436/how-to-detect-the-installed-chrome-version
     if (!api) {
         setStatus('unavailable', 'API unavailable');
-        const match = navigator.userAgent.match(/Chrome\/(\d+)/);
-        const chromeVersion = match ? parseInt(match[1], 10) : null;
+        const match = navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
+        const chromeVersion = match ? parseInt(match[2], 10) : null;
         const versionLine = chromeVersion
             ? 'Your Chrome version: ' + chromeVersion + ', required: 148+.'
             : 'Could not detect your Chrome version (required: 148+).';

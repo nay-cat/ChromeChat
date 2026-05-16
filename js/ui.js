@@ -23,7 +23,7 @@ export function closeModal() {
 export function showError(msg) {
     openModal('Not available', '');
     dom.setupError.classList.remove('hidden');
-    dom.setupErrorMsg.textContent = msg;
+    dom.setupErrorMsg.innerHTML = msg;
 }
 
 export function showWelcome() {
