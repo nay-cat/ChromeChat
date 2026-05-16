@@ -106,7 +106,17 @@ async function waitForDownload(langs) {
         await createNanoSession(langs);
     } catch (err) {
         dom.setupProgress.classList.add('hidden');
-        showError('Download failed: ' + err.message);
+
+        const availability = await self._ccLM.availability({
+            expectedInputs: [{ type: 'text', languages: langs }],
+            expectedOutputs: [{ type: 'text', languages: langs }],
+        }).catch(() => 'unavailable');
+
+        if (availability === 'available') {
+            await createNanoSession(langs);
+        } else {
+            showError('Download failed: ' + err.message);
+        }
     }
 }
 
