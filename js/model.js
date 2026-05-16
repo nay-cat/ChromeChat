@@ -12,9 +12,15 @@ export async function initModel() {
 
     if (!api) {
         setStatus('unavailable', 'API unavailable');
+        const match = navigator.userAgent.match(/Chrome\/(\d+)/);
+        const chromeVersion = match ? parseInt(match[1], 10) : null;
+        const versionLine = chromeVersion
+            ? 'Your Chrome version: ' + chromeVersion + ', required: 148+.'
+            : 'Could not detect your Chrome version (required: 148+).';
         showError(
-            'LanguageModel API not found. Make sure you are on Chrome 127+ and that ' +
-            'chrome://flags/#prompt-api-for-gemini-nano is set to "Enabled".'
+            'LanguageModel API not found. ' + versionLine + ' ' +
+            'Make sure chrome://flags/#prompt-api-for-gemini-nano is set to "Enabled". ' +
+            'See <a href="https://developer.chrome.com/docs/ai/built-in-apis" target="_blank" rel="noopener noreferrer">Chrome built-in AI docs</a> for more info.'
         );
         return;
     }
