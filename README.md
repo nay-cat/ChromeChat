@@ -1,6 +1,6 @@
 <img width="300" height="69" alt="chromeChatLogo" src="https://github.com/user-attachments/assets/4ae1cafd-21e0-4d09-8645-7068c14a61c8" />
 
-Offline PWA chat powered by Chrome's built-in Gemini Nano. No server, no API key, no internet required after setup.
+Offline PWA chat powered by Chrome's built-in Gemini Nano ([Prompt API](https://developer.chrome.com/docs/ai/prompt-api)). No server, no API key, no internet required after setup.
 
 > "Visit the [page once](https://nay-cat.github.io/ChromeChat/) using Wi-Fi, and then use it even without Wi-Fi"
 
