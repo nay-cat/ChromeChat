@@ -1,6 +1,7 @@
 /* shared ui helpers: modal open/close, status indicator, scroll, input resize, dino animation, storage disclaimer */
 
 import { dom } from './dom.js';
+import { getLocalStorageSize } from './utils.js';
 
 export function setStatus(type, text) {
     dom.modelStatus.className = 'model-status ' + type;
@@ -69,12 +70,10 @@ export function updateStorageDisclaimer() {
     const el = document.getElementById('storage-disclaimer');
     if (!el) return;
 
-    try {
-        const used = new Blob(Object.values(localStorage)).size;
-        const kb = (used / 1024).toFixed(1);
-        const pct = ((used / (5 * 1024 * 1024)) * 100).toFixed(1);
-        el.textContent = `Local storage: ${kb} KB used (${pct}% of 5 MB)`;
-    } catch {
+    const size = getLocalStorageSize();
+    if (size) {
+        el.textContent = 'Local storage: ' + size.kb + ' KB used (' + size.pct + '% of 5 MB)';
+    } else {
         el.textContent = 'Local storage: unable to measure';
     }
 }

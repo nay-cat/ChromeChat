@@ -2,7 +2,7 @@
 
 import { state } from './state.js';
 import { saveChats } from './chat.js';
-import { loadBlob, saveBlob } from './db.js';
+import { rehydrateBlobsForExport, storeBlobsFromImport } from './utils.js';
 
 export async function exportChat() {
     const chat = state.chats.find(function (c) {
@@ -11,7 +11,7 @@ export async function exportChat() {
 
     if (!chat) return;
 
-    const messages = await rehydrateMessagesForExport(chat.messages);
+    const messages = await rehydrateBlobsForExport(chat.messages);
     const payload = JSON.stringify({ version: 1, chat: Object.assign({}, chat, { messages }) }, null, 2);
 
     const blob = new Blob([payload], { type: 'application/json' });
@@ -23,28 +23,6 @@ export async function exportChat() {
     link.click();
 
     URL.revokeObjectURL(url);
-}
-
-async function rehydrateMessagesForExport(messages) {
-    return Promise.all(messages.map(async function (msg) {
-        const hasBlobs = msg.attachments && msg.attachments.some(function (a) {
-            return a.blobKey;
-        });
-
-        if (!hasBlobs) return msg;
-
-        const attachments = await Promise.all(msg.attachments.map(async function (att) {
-            if (!att.blobKey) return att;
-
-            const dataUrl = await loadBlob(att.blobKey);
-            const copy = Object.assign({}, att);
-            delete copy.blobKey;
-            copy.dataUrl = dataUrl;
-            return copy;
-        }));
-
-        return Object.assign({}, msg, { attachments });
-    }));
 }
 
 export async function importChat(file) {
@@ -62,7 +40,7 @@ export async function importChat(file) {
     }
 
     const chat = payload.chat;
-    const messages = await storeImportedBlobs(chat.messages);
+    const messages = await storeBlobsFromImport(chat.messages);
     const imported = Object.assign({}, chat, {
         id: Date.now().toString(),
         messages,
@@ -74,26 +52,3 @@ export async function importChat(file) {
     return imported;
 }
 
-async function storeImportedBlobs(messages) {
-    return Promise.all(messages.map(async function (msg) {
-        const hasInlineImages = msg.attachments && msg.attachments.some(function (a) {
-            return a.dataUrl;
-        });
-
-        if (!hasInlineImages) return msg;
-
-        const attachments = await Promise.all(msg.attachments.map(async function (att, index) {
-            if (att.type !== 'image' || !att.dataUrl) return att;
-
-            const blobKey = msg.id + '_' + index;
-            await saveBlob(blobKey, att.dataUrl);
-
-            const copy = Object.assign({}, att);
-            delete copy.dataUrl;
-            copy.blobKey = blobKey;
-            return copy;
-        }));
-
-        return Object.assign({}, msg, { attachments });
-    }));
-}

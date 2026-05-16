@@ -3,6 +3,7 @@
 import { state } from './state.js';
 import { dom } from './dom.js';
 import { autoResize, updateSendBtn, showWelcome, showChat, updateStorageDisclaimer, startDino, stopDino } from './ui.js';
+import { getLocalStorageSize } from './utils.js';
 import { createChat, deleteChat, saveChats } from './chat.js';
 import { renderMessages } from './render.js';
 import { sendMessage } from './send.js';
@@ -252,12 +253,10 @@ function closeSettings() {
 }
 
 function updateStorageInfo() {
-    try {
-        const used = new Blob(Object.values(localStorage)).size;
-        const kb = (used / 1024).toFixed(1);
-        const pct = ((used / (5 * 1024 * 1024)) * 100).toFixed(1);
-        dom.storageInfo.textContent = kb + ' KB used (' + pct + '% of 5 MB limit)';
-    } catch {
+    const size = getLocalStorageSize();
+    if (size) {
+        dom.storageInfo.textContent = size.kb + ' KB used (' + size.pct + '% of 5 MB limit)';
+    } else {
         dom.storageInfo.textContent = 'Unable to measure storage';
     }
 }

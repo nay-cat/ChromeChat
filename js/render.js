@@ -3,8 +3,8 @@
 import { dom } from './dom.js';
 import { scrollToBottom } from './ui.js';
 import { getActiveChat } from './chat.js';
-import { loadBlob } from './db.js';
 import { loadSettings } from './settings.js';
+import { rehydrateBlobsForDisplay } from './utils.js';
 
 export async function renderMessages() {
     dom.messages.innerHTML = '';
@@ -13,29 +13,11 @@ export async function renderMessages() {
     if (!chat) return;
 
     for (const msg of chat.messages) {
-        const resolved = await loadMessageBlobs(msg);
+        const resolved = await rehydrateBlobsForDisplay(msg);
         appendMessageDOM(resolved);
     }
 
     scrollToBottom();
-}
-
-async function loadMessageBlobs(msg) {
-    const hasBlobs = msg.attachments && msg.attachments.some(function (a) {
-        return a.blobKey;
-    });
-
-    if (!hasBlobs) return msg;
-
-    const attachments = await Promise.all(msg.attachments.map(async function (att) {
-        if (att.blobKey) {
-            const dataUrl = await loadBlob(att.blobKey);
-            return Object.assign({}, att, { dataUrl });
-        }
-        return att;
-    }));
-
-    return Object.assign({}, msg, { attachments });
 }
 
 function makeAvatar(isUser, name) {
@@ -54,61 +36,10 @@ function makeAvatar(isUser, name) {
     return avatar;
 }
 
-export function appendMessageDOM(msg) {
-    const settings = loadSettings();
-    const isUser = msg.role === 'user';
-    let name;
-    if (isUser) {
-        name = settings.userName;
-    } else {
-        name = settings.aiName;
-    }
-
-    const messageEl = document.createElement('div');
-    messageEl.className = 'message ' + msg.role;
-    messageEl.dataset.id = msg.id;
-
-    const body = document.createElement('div');
-    body.className = 'message-body';
-
-    const nameEl = document.createElement('div');
-    nameEl.className = 'message-name';
-    nameEl.textContent = name;
-    body.appendChild(nameEl);
-
-    if (msg.attachments && msg.attachments.length > 0) {
-        body.appendChild(buildAttachmentsEl(msg.attachments));
-    }
-
-    const textEl = document.createElement('div');
-    textEl.className = 'message-text';
-
-    if (msg.content) {
-        textEl.innerHTML = DOMPurify.sanitize(marked.parse(msg.content), { ADD_ATTR: ['class'] });
-    }
-
-    body.appendChild(textEl);
-
-    if (!isUser && msg.content) {
-        body.appendChild(makeCopyButton(msg.content));
-    }
-
-    messageEl.appendChild(makeAvatar(isUser, name));
-    messageEl.appendChild(body);
-    dom.messages.appendChild(messageEl);
-
-    return messageEl;
-}
-
-export function appendStreamingMessage(role) {
+function createMessageShell(role, name) {
     const settings = loadSettings();
     const isUser = role === 'user';
-    let name;
-    if (isUser) {
-        name = settings.userName;
-    } else {
-        name = settings.aiName;
-    }
+    const resolvedName = name || (isUser ? settings.userName : settings.aiName);
 
     const messageEl = document.createElement('div');
     messageEl.className = 'message ' + role;
@@ -118,17 +49,41 @@ export function appendStreamingMessage(role) {
 
     const nameEl = document.createElement('div');
     nameEl.className = 'message-name';
-    nameEl.textContent = name;
+    nameEl.textContent = resolvedName;
 
     const textEl = document.createElement('div');
     textEl.className = 'message-text';
 
     body.appendChild(nameEl);
     body.appendChild(textEl);
-    messageEl.appendChild(makeAvatar(isUser, name));
+    messageEl.appendChild(makeAvatar(isUser, resolvedName));
     messageEl.appendChild(body);
     dom.messages.appendChild(messageEl);
 
+    return { messageEl, body, textEl };
+}
+
+export function appendMessageDOM(msg) {
+    const { messageEl, body, textEl } = createMessageShell(msg.role);
+    messageEl.dataset.id = msg.id;
+
+    if (msg.attachments && msg.attachments.length > 0) {
+        body.insertBefore(buildAttachmentsEl(msg.attachments), textEl);
+    }
+
+    if (msg.content) {
+        textEl.innerHTML = DOMPurify.sanitize(marked.parse(msg.content), { ADD_ATTR: ['class'] });
+    }
+
+    if (msg.role !== 'user' && msg.content) {
+        body.appendChild(makeCopyButton(msg.content));
+    }
+
+    return messageEl;
+}
+
+export function appendStreamingMessage(role) {
+    const { textEl } = createMessageShell(role);
     return textEl;
 }
 
