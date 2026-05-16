@@ -2,7 +2,7 @@
 
 Offline PWA chat powered by Chrome's built-in Gemini Nano. No server, no API key, no internet required after setup.
 
-> "Visit the page once using Wi-Fi, and then use it even without Wi-Fi"
+> "Visit the [page once](https://nay-cat.github.io/ChromeChat/) using Wi-Fi, and then use it even without Wi-Fi"
 
 ## Requirements
 
@@ -23,7 +23,7 @@ Offline PWA chat powered by Chrome's built-in Gemini Nano. No server, no API key
 
 ## How to use
 
-1. Open the app in Chrome
+1. [Open the web in Chrome](https://nay-cat.github.io/ChromeChat/)
 2. On first launch, ChromeChat will check if Gemini Nano is available and guide you through the model download
 3. Select your preferred languages (English, Spanish, Japanese)
 4. Start chatting
@@ -50,5 +50,6 @@ Nothing is ever sent to a server, all data stays in your browser.
 - **Funny** Funny
 
 ---
+<img width="1717" height="891" alt="image" src="https://github.com/user-attachments/assets/f5a67f93-f410-410b-8d71-7b04ab297f84" />
 
 Imagine using this so your data doesnt go to online servers, but then you remember that you are using Google Chrome
