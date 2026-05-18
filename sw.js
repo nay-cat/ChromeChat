@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chromechat-release';
+const CACHE_NAME = 'chromechat-release-eg';
 
 const BASE = self.location.pathname.replace(/\/sw\.js$/, '');
 

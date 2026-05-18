@@ -138,7 +138,7 @@ export async function sendMessage() {
 
         let errorMessage;
         if (err.name === 'QuotaExceededError' || err.message.toLowerCase().includes('too large')) {
-            errorMessage = 'The attached content is too large for Gemini Nano\'s context window. Try a shorter document or paste only the relevant section.';
+            errorMessage = 'The attached content is too large for ' + (self._ccLMIsEdge ? 'Phi' : 'Gemini Nano') + '\'s context window. Try a shorter document or paste only the relevant section.';
         } else {
             errorMessage = 'Error: ' + err.message;
         }

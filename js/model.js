@@ -21,23 +21,49 @@ export async function initModel() {
         showError(
             'LanguageModel API not found. ' + versionLine + ' ' +
             'Make sure chrome://flags/#prompt-api-for-gemini-nano is set to "Enabled". ' +
-            'See <a href="https://developer.chrome.com/docs/ai/built-in-apis" target="_blank" rel="noopener noreferrer">Chrome built-in AI docs</a> for more info.'
+            'Some Chromium-based browsers (Brave, Hellium, etc..) may have disabled or removed this component' +
+            'check <a href="chrome://components" target="_blank" rel="noopener noreferrer">chrome://components</a> and make sure "Optimization Guide On Device Model" is present and up to date. ' +
+            'See <a href="https://developer.chrome.com/docs/ai/built-in-apis" target="_blank" rel="noopener noreferrer">Chrome built-in AI docs</a> for more info. ' +
+            'If you think this is a bug, please <a href="https://github.com/nay-cat/ChromeChat/issues" target="_blank" rel="noopener noreferrer">open an issue on GitHub</a>.'
         );
         return;
     }
 
     self._ccLM = api;
+    self._ccLMIsEdge = /Edg\//.test(navigator.userAgent);
+
+    const timeoutHandle = setTimeout(() => {
+        setStatus('checking', 'Still checking...');
+        showError(
+            'ChromeChat detected the LanguageModel API but it is not responding. ' +
+            'This usually happens with Chromium-based browsers (Brave, Helium, etc.) that expose the API but don\'t fully implement it, ' +
+            'or with a modified version of Chrome where the underlying model component is missing or disabled. ' +
+            'Check <a href="chrome://components" target="_blank" rel="noopener noreferrer">chrome://components</a> and make sure "Optimization Guide On Device Model" is installed and up to date. ' +
+            'If you think this is a bug, please <a href="https://github.com/nay-cat/ChromeChat/issues" target="_blank" rel="noopener noreferrer">open an issue on GitHub</a>.'
+        );
+
+        const btn = document.createElement('button');
+        btn.textContent = 'I am using Chrome, keep waiting';
+        btn.className = 'btn-secondary';
+        btn.onclick = function () {
+            dom.setupModal.classList.add('hidden');
+            setStatus('checking', 'Checking model...');
+        };
+        dom.setupError.querySelector('.setup-error-actions').appendChild(btn);
+    }, 30000);
 
     try {
         const langs = getSelectedLangs();
-        const availability = await api.availability({
+        const availabilityParams = self._ccLMIsEdge ? {} : {
             expectedInputs: [{ type: 'text', languages: langs }],
             expectedOutputs: [{ type: 'text', languages: langs }],
-        });
+        };
+        const availability = await api.availability(availabilityParams);
+        clearTimeout(timeoutHandle);
 
         if (availability === 'unavailable') {
             setStatus('unavailable', 'Model unavailable');
-            showError('Gemini Nano is not available on this device. Check hardware requirements in Settings.');
+            showError((self._ccLMIsEdge ? 'The built-in model' : 'Gemini Nano') + ' is not available on this device. Check hardware requirements in Settings.');
             return;
         }
 
@@ -54,6 +80,7 @@ export async function initModel() {
 
         await createNanoSession(langs);
     } catch (err) {
+        clearTimeout(timeoutHandle);
         setStatus('unavailable', 'Error');
         showError('Initialization error: ' + err.message);
     }
@@ -83,7 +110,7 @@ function saveSelectedLangs(langs) {
 }
 
 async function waitForDownload(langs) {
-    openModal('Downloading model...', 'Chrome is downloading Gemini Nano. This only happens once.');
+    openModal('Downloading model...', (self._ccLMIsEdge ? 'Your browser' : 'Chrome') + ' is downloading the model. This only happens once.');
     dom.setupProgress.classList.remove('hidden');
 
     try {
@@ -122,7 +149,7 @@ async function waitForDownload(langs) {
 
 function showLangAndDownload() {
     setStatus('downloading', 'Model not downloaded');
-    openModal('Download Gemini Nano', 'Choose the languages you need and download the model.');
+    openModal('Download model', 'Choose the languages you need and download the model.');
     dom.setupLang.classList.remove('hidden');
 
     populateCompatBox();
@@ -263,21 +290,30 @@ async function createNanoSession(langs) {
     try {
         const settings = loadSettings();
 
-        state.session = await self._ccLM.create({
-            expectedInputs: [
-                { type: 'text', languages: langs },
-                { type: 'image' },
-            ],
-            expectedOutputs: [
-                { type: 'text', languages: langs },
-            ],
-            initialPrompts: [
-                { role: 'system', content: settings.systemPrompt },
-            ],
-        });
+        let createParams;
+        if (self._ccLMIsEdge) {
+            createParams = {
+                initialPrompts: [{ role: 'system', content: settings.systemPrompt }],
+            };
+        } else {
+            const imageAvail = await self._ccLM.availability({
+                expectedInputs: [{ type: 'text', languages: langs }, { type: 'image' }],
+                expectedOutputs: [{ type: 'text', languages: langs }],
+            }).catch(() => 'unavailable');
+
+            createParams = {
+                expectedInputs: imageAvail === 'available'
+                    ? [{ type: 'text', languages: langs }, { type: 'image' }]
+                    : [{ type: 'text', languages: langs }],
+                expectedOutputs: [{ type: 'text', languages: langs }],
+                initialPrompts: [{ role: 'system', content: settings.systemPrompt }],
+            };
+        }
+
+        state.session = await self._ccLM.create(createParams);
 
         state.modelReady = true;
-        setStatus('ready', 'Gemini Nano ready');
+        setStatus('ready', (self._ccLMIsEdge ? 'Phi' : 'Gemini Nano') + ' ready');
         closeModal();
         updateSendBtn(state);
     } catch (err) {

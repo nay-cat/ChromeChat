@@ -383,7 +383,7 @@ async function addGpuSpecs(specs) {
 async function addModelSpecs(specs) {
     let modelLabel;
     if (state.modelReady) {
-        modelLabel = 'Gemini Nano (on-device)';
+        modelLabel = (self._ccLMIsEdge ? 'Phi' : 'Gemini Nano') + ' (on-device)';
     } else {
         modelLabel = 'Not loaded';
     }
