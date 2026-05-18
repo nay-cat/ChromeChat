@@ -50,7 +50,7 @@ export async function initModel() {
             setStatus('checking', 'Checking model...');
         };
         dom.setupError.querySelector('.setup-error-actions').appendChild(btn);
-    }, 30000);
+    }, 75000);
 
     try {
         const langs = getSelectedLangs();

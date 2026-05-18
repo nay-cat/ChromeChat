@@ -53,7 +53,7 @@ Nothing is ever sent to a server, all data stays in your browser.
 - Go to `chrome://components` and make sure **Optimization Guide On Device Model** is present and up to date
 - Some Chromium-based browsers (Brave, Helium, etc.) expose the LanguageModel API but don't fully implement it. If you're on one of these browsers, switch to Google Chrome or check if your browser has its own Prompt API support *(many of them spoof the user agent, making browser detection unreliable and frankly not worth the effort)*
 
-### Model not loading / API not responding after 30 seconds
+### Model not loading
 
 - The API was detected but is not responding, this usually means the model component is missing or disabled
 - Go to `chrome://components` and update/make sure is present **Optimization Guide On Device Model** (should be in Google Chrome)
