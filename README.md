@@ -79,3 +79,8 @@ Nothing is ever sent to a server, all data stays in your browser.
 <img width="1717" height="891" alt="image" src="https://github.com/user-attachments/assets/f5a67f93-f410-410b-8d71-7b04ab297f84" />
 
 Imagine using this so your data doesnt go to online servers, but then you remember that you are using Google Chrome
+
+## More information about the Prompt API
+
+https://github.com/webmachinelearning/prompt-api
+https://www.w3.org/TR/webnn/
