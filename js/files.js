@@ -3,6 +3,7 @@
 import { state } from './state.js';
 import { dom } from './dom.js';
 import { escapeHtml, truncate, updateSendBtn } from './ui.js';
+import { getOrCreateChatSession } from './model.js';
 
 export async function handleFiles(fileList) {
     for (const file of fileList) {
@@ -27,6 +28,11 @@ export async function handleFiles(fileList) {
             } finally {
                 toast.remove();
             }
+
+            if (state.modelReady && state.activeChatId && entry.textContent) {
+                prependTextToSession(entry.textContent, file.name);
+                entry.preAppended = true;
+            }
         } else {
             entry.type = 'file';
 
@@ -42,6 +48,18 @@ export async function handleFiles(fileList) {
 
     renderAttachmentsPreview();
     updateSendBtn(state);
+}
+
+async function prependTextToSession(textContent, name) {
+    try {
+        const session = await getOrCreateChatSession(state.activeChatId);
+        await session.append([{
+            role: 'user',
+            content: '[Pre-loading document: ' + name + ']\n' + textContent,
+        }]);
+    } catch (err) {
+        console.warn('Could not pre-append document to session:', err.message);
+    }
 }
 
 function readFileAs(file, mode) {

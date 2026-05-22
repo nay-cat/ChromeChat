@@ -1,7 +1,9 @@
 /* single mutable object that holds the runtime state shared across all modules */
 
 export const state = {
-    session: null,
+    sessions: {},
+    sessionCreateParams: null,
+    supportsImages: false,
     chats: JSON.parse(localStorage.getItem('cc_chats') || '[]'),
     activeChatId: null,
     pendingFiles: [],

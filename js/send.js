@@ -6,10 +6,8 @@ import { truncate, scrollToBottom, updateSendBtn, showChat, autoResize, updateSt
 import { createChat, getActiveChat, saveChats } from './chat.js';
 import { appendMessageDOM, appendStreamingMessage, makeCopyButton } from './render.js';
 import { clearAttachments } from './files.js';
-import { saveBlob } from './db.js';
-import { loadSettings } from './settings.js';
-
-const MAX_PROMPT_CHARS = 20000;
+import { saveBlob, loadBlob } from './db.js';
+import { getOrCreateChatSession } from './model.js';
 
 export async function sendMessage() {
     if (state.isGenerating || !state.modelReady) return;
@@ -89,11 +87,6 @@ export async function sendMessage() {
         analyzingLabel.textContent = 'Analyzing document...';
         textEl.appendChild(analyzingLabel);
         textEl.appendChild(dinoIndicator);
-
-        state.session.addEventListener('contextoverflow', function onOverflow() {
-            analyzingLabel.textContent = 'Document too large, working with partial content...';
-            state.session.removeEventListener('contextoverflow', onOverflow);
-        });
     } else {
         textEl.appendChild(dinoIndicator);
     }
@@ -101,9 +94,16 @@ export async function sendMessage() {
     scrollToBottom();
 
     try {
-        const settings = loadSettings();
-        const prompt = buildPrompt(userMessage, chat.messages, settings);
-        const stream = state.session.promptStreaming(prompt);
+        const session = await getOrCreateChatSession(state.activeChatId);
+
+        session.addEventListener('contextoverflow', function onOverflow() {
+            const label = textEl.querySelector('.analyzing-label');
+            if (label) label.textContent = 'Document too large, working with partial content...';
+            session.removeEventListener('contextoverflow', onOverflow);
+        });
+
+        const promptContent = await buildPromptContent(userMessage);
+        const stream = session.promptStreaming([{ role: 'user', content: promptContent }]);
         let accumulated = '';
 
         for await (const delta of stream) {
@@ -165,59 +165,56 @@ async function buildAttachments(files, messageId) {
             await saveBlob(blobKey, file.dataUrl);
             attachments.push({ name: file.name, type: 'image', blobKey });
         } else {
-            attachments.push({ name: file.name, type: file.type, textContent: file.textContent });
+            const att = { name: file.name, type: file.type, textContent: file.textContent };
+            if (file.preAppended) att.preAppended = true;
+            attachments.push(att);
         }
     }
 
     return attachments;
 }
 
+async function buildPromptContent(userMessage) {
+    const parts = [];
 
-function buildPrompt(userMessage, allMessages, settings) {
-    const recentHistory = allMessages.slice(-8, -2).filter(function (m) {
-        return m.content;
-    });
-
-    let prompt = '';
-
-    if (recentHistory.length > 0) {
-        const historyLines = recentHistory.map(function (m) {
-            let speaker;
-            if (m.role === 'user') {
-                speaker = settings.userName;
-            } else {
-                speaker = settings.aiName;
-            }
-            return speaker + ': ' + m.content;
-        });
-
-        prompt = historyLines.join('\n') + '\n\n' + settings.userName + ': ';
+    if (userMessage.content) {
+        parts.push({ type: 'text', value: userMessage.content });
     }
-
-    prompt += userMessage.content || '';
 
     if (userMessage.attachments) {
         for (const att of userMessage.attachments) {
-            if (att.textContent) {
-                const remaining = MAX_PROMPT_CHARS - prompt.length - 200;
-                let content = att.textContent;
-                let truncated = false;
-
-                if (content.length > remaining) {
-                    content = content.slice(0, remaining);
-                    truncated = true;
+            if (att.type === 'image' && state.supportsImages) {
+                const dataUrl = att.blobKey ? await loadBlob(att.blobKey) : att.dataUrl;
+                if (dataUrl) {
+                    const blob = dataUrlToBlob(dataUrl);
+                    parts.push({ type: 'image', value: blob });
                 }
-
-                prompt += '\n\n[Attached file: ' + att.name;
-                if (truncated) {
-                    prompt += ' — truncated to fit context window';
+            } else if (att.type === 'image' && !state.supportsImages) {
+                parts.push({ type: 'text', value: '[Attached image: ' + att.name + ']' });
+            } else if (att.textContent) {
+                if (att.preAppended) {
+                    parts.push({ type: 'text', value: '[Refer to the previously loaded document: ' + att.name + ']' });
+                } else {
+                    parts.push({ type: 'text', value: '[Attached file: ' + att.name + ']\n' + att.textContent });
                 }
-                prompt += ']\n' + content;
-            } else if (att.type === 'image') {
-                prompt += '\n\n[Attached image: ' + att.name + ']';
             }
         }
     }
 
-    return prompt.trim();
+    if (parts.length === 1 && parts[0].type === 'text') {
+        return parts[0].value;
+    }
+
+    return parts;
+}
+
+function dataUrlToBlob(dataUrl) {
+    const [header, base64] = dataUrl.split(',');
+    const mime = header.match(/:(.*?);/)[1];
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: mime });
 }

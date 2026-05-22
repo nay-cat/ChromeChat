@@ -117,10 +117,7 @@ async function waitForDownload(langs) {
         const session = await self._ccLM.create({
             monitor: function (monitor) {
                 monitor.addEventListener('downloadprogress', function (event) {
-                    let pct = 0;
-                    if (event.total > 0) {
-                        pct = Math.round((event.loaded / event.total) * 100);
-                    }
+                    const pct = Math.round(event.loaded * 100);
                     dom.progressFill.style.width = pct + '%';
                     dom.progressText.textContent = pct + '%';
                     setStatus('downloading', 'Downloading ' + pct + '%');
@@ -266,10 +263,7 @@ async function downloadNano(langs) {
             expectedOutputs: [{ type: 'text', languages: langs }],
             monitor: function (monitor) {
                 monitor.addEventListener('downloadprogress', function (event) {
-                    let pct = 0;
-                    if (event.total > 0) {
-                        pct = Math.round((event.loaded / event.total) * 100);
-                    }
+                    const pct = Math.round(event.loaded * 100);
                     dom.progressFill.style.width = pct + '%';
                     dom.progressText.textContent = pct + '%';
                     setStatus('downloading', 'Downloading ' + pct + '%');
@@ -290,9 +284,8 @@ async function createNanoSession(langs) {
     try {
         const settings = loadSettings();
 
-        let createParams;
         if (self._ccLMIsEdge) {
-            createParams = {
+            state.sessionCreateParams = {
                 initialPrompts: [{ role: 'system', content: settings.systemPrompt }],
             };
         } else {
@@ -301,7 +294,7 @@ async function createNanoSession(langs) {
                 expectedOutputs: [{ type: 'text', languages: langs }],
             }).catch(() => 'unavailable');
 
-            createParams = {
+            state.sessionCreateParams = {
                 expectedInputs: imageAvail === 'available'
                     ? [{ type: 'text', languages: langs }, { type: 'image' }]
                     : [{ type: 'text', languages: langs }],
@@ -310,7 +303,9 @@ async function createNanoSession(langs) {
             };
         }
 
-        state.session = await self._ccLM.create(createParams);
+        state.supportsImages = state.sessionCreateParams.expectedInputs
+            ? state.sessionCreateParams.expectedInputs.some(function (i) { return i.type === 'image'; })
+            : false;
 
         state.modelReady = true;
         setStatus('ready', (self._ccLMIsEdge ? 'Phi' : 'Gemini Nano') + ' ready');
@@ -319,5 +314,23 @@ async function createNanoSession(langs) {
     } catch (err) {
         setStatus('unavailable', 'Error');
         showError('Could not create session: ' + err.message);
+    }
+}
+
+export async function getOrCreateChatSession(chatId) {
+    if (state.sessions[chatId]) {
+        return state.sessions[chatId];
+    }
+
+    const session = await self._ccLM.create(state.sessionCreateParams);
+    state.sessions[chatId] = session;
+    return session;
+}
+
+export function destroyChatSession(chatId) {
+    const session = state.sessions[chatId];
+    if (session) {
+        session.destroy();
+        delete state.sessions[chatId];
     }
 }

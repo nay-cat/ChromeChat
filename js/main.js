@@ -7,8 +7,8 @@ import { getLocalStorageSize } from './utils.js';
 import { createChat, deleteChat, saveChats } from './chat.js';
 import { renderMessages } from './render.js';
 import { sendMessage } from './send.js';
-import { handleFiles } from './files.js';
-import { initModel } from './model.js';
+import { handleFiles, clearAttachments } from './files.js';
+import { initModel, destroyChatSession } from './model.js';
 import { exportChat, importChat } from './portability.js';
 import { loadSettings, saveSettings } from './settings.js';
 
@@ -20,6 +20,7 @@ function applySettingsToUI() {
 }
 
 function startNewChat() {
+    clearAttachments();
     state.activeChatId = null;
     dom.exportBtn.disabled = true;
     dom.messages.innerHTML = '';
@@ -140,6 +141,7 @@ function renderHistoryList() {
 
         deleteBtn.onclick = function (event) {
             event.stopPropagation();
+            destroyChatSession(chat.id);
             deleteChat(chat.id);
 
             if (!state.activeChatId) {
@@ -150,6 +152,7 @@ function renderHistoryList() {
         };
 
         item.addEventListener('click', function () {
+            clearAttachments();
             state.activeChatId = chat.id;
             showChat();
             renderMessages();
@@ -228,6 +231,10 @@ dom.settingsReset.addEventListener('click', function () {
 
 dom.clearStorageBtn.addEventListener('click', function () {
     if (!confirm('Delete all chats? This cannot be undone.')) return;
+
+    for (const id of Object.keys(state.sessions)) {
+        destroyChatSession(id);
+    }
 
     state.chats = [];
     state.activeChatId = null;
