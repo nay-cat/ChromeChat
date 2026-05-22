@@ -6,10 +6,9 @@ Offline PWA chat powered by Chrome's built-in Gemini Nano ([Prompt API](https://
 
 ## Requirements
 
-**Google Chrome:**
 - Chrome 148+
 - Enable the flag: `chrome://flags/#prompt-api-for-gemini-nano`
-- ~4GB free storage (for the Gemini Nano model download)
+- ~4GB free storage (for the Gemini Nano model download) (~2,4GB in the case of Microsoft Edge)
 - Compatible GPU and CPU (checked automatically on first launch)
 - [More info about requirements here](https://developer.chrome.com/docs/ai/prompt-api)
 
